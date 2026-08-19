@@ -3,13 +3,67 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover is REQUIRED for env(safe-area-inset-*) to return anything but 0.
+         Without it the mobile tab bar cannot clear the iPhone home indicator. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#04060a" />
+    <!-- STANDALONE (Jul 30 2026). Without these, iOS "Add to Home Screen" makes a shortcut
+         that opens in Safari WITH its chrome — the URL bar and toolbar stay, the bottom tab
+         bar sits under the toolbar, and 100dvh spends its life fighting a collapsing
+         browser UI. Every bit of the viewport-fit/safe-area work is wasted until this exists.
+         black-translucent lets the app paint under the status bar for a true edge-to-edge
+         instrument; the shell pays for that with padding-top: var(--safe-t) so the command
+         strip never renders beneath the clock. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GARGANTUA" />
+    <!-- MUST be a PNG. iOS ignores an SVG apple-touch-icon entirely and falls back to a
+         generated letter tile — which is why the home screen showed a bare "G" over the
+         Vite default favicon. 180 is the modern @3x size. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <title>GARGANTUA — Trading Edge</title>
-    <script type="module" crossorigin src="./assets/index-C2R7iKRw.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BeOe7vo1.css">
+    <script type="module" crossorigin src="./assets/index-bd2z-evT.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B3KAPgf_.css">
   </head>
   <body>
     <div id="root"></div>
+    <!-- THE OFFLINE FALLBACK (Aug 1 2026). The worker's only job is to hold offline.html on
+         the device so an unreachable backend explains itself instead of rendering a silent
+         white screen in iOS standalone. It caches that ONE file and nothing else — see the
+         long note at the top of sw.js for why a precaching worker would be actively harmful
+         in an app whose entire discipline is that a number is current or visibly stale.
+
+         Registered from document.baseURI, not '/sw.js': vite builds with base './' so the
+         same bundle serves at the tailnet root AND on a subpath (the GitHub Pages static
+         exhibit), and an absolute path would 404 there and register nothing.
+
+         ★★ DORMANT TODAY — AND MEASURED, NOT ASSUMED. Service workers need a SECURE CONTEXT:
+         https, or literally localhost/127.0.0.1. `http://<tailnet-ip>:8788` is neither, and
+         a headless check against the live server returns isSecureContext:false with
+         `'serviceWorker' in navigator` === FALSE — the API is not merely restricted, it is
+         absent, so the guard below short-circuits and nothing registers. The phone therefore
+         still gets the silent white screen until the origin is served over HTTPS.
+
+         THE UNLOCK is one setting plus one command: enable HTTPS Certificates for the tailnet
+         in the Tailscale admin console (CertDomains is currently None), then
+         `tailscale serve --bg --https=443 http://<tailnet-ip>:8788`, which publishes
+         https://<machine>.<tailnet>.ts.net. That origin IS secure, and this registration then
+         starts working with no further change. Everything here is written and built against
+         that moment; it is inert, not broken.
+
+         Deferred to `load` so registration never competes with the app's first paint or its
+         websocket. -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          try {
+            navigator.serviceWorker.register(new URL('sw.js', document.baseURI).href)
+              .catch(function () { /* insecure origin or blocked — the app is unaffected */ });
+          } catch (e) { /* no-op */ }
+        });
+      }
+    </script>
   </body>
 </html>
