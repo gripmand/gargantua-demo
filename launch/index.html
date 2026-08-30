@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GARGANTUA — know whether your P&amp;L was skill</title>
+    <meta name="description" content="An options trade journal that separates the return you earned from the return the market handed you, and holds every setup to a statistical bar it has to clear or get killed." />
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+    <meta name="theme-color" content="#04060a" />
+
+    <!-- Open Graph. The demo screenshot is the strongest asset this page has;
+         point og:image at a real capture of the instrument before any paid traffic. -->
+    <meta property="og:title" content="GARGANTUA — know whether your P&amp;L was skill" />
+    <meta property="og:description" content="Most journals tell you what happened. This one tells you whether it was you." />
+    <meta property="og:type" content="website" />
+
+    <style>
+      /* The palette is lifted from the instrument itself (index.html theme-color #04060a).
+         That is deliberate: the landing page has to feel like the same object the demo
+         link opens, or the click-through reads as a bait-and-switch. */
+      :root {
+        --bg: #04060a;
+        --panel: #0a0e15;
+        --panel-2: #0d1220;
+        --line: #1a2030;
+        --line-bright: #26304a;
+        --ink: #ccd4e0;
+        --ink-bright: #f2f6fb;
+        --dim: #6c7789;
+        --alpha: #35d07f;
+        --beta: #3b4a63;
+        --warn: #e0a33e;
+        --loss: #ef5a42;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a { color: inherit; }
+
+      .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+      /* ---------- nav ---------- */
+      nav {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 20px 0; border-bottom: 1px solid var(--line);
+      }
+      .wordmark {
+        font-family: var(--mono); font-size: 13px; letter-spacing: 0.22em;
+        color: var(--ink-bright); text-decoration: none;
+      }
+      .wordmark span { color: var(--alpha); }
+      .navlink {
+        font-family: var(--mono); font-size: 12px; color: var(--dim);
+        text-decoration: none; border-bottom: 1px solid transparent; padding-bottom: 2px;
+      }
+      .navlink:hover { color: var(--ink); border-bottom-color: var(--line-bright); }
+
+      /* ---------- hero ---------- */
+      header { padding: 84px 0 64px; }
+      h1 {
+        font-size: clamp(30px, 5.4vw, 50px);
+        line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 22px;
+        color: var(--ink-bright); font-weight: 600; max-width: 17ch;
+      }
+      .sub { font-size: clamp(16px, 2.1vw, 19px); color: var(--dim); max-width: 60ch; margin: 0 0 34px; }
+      .sub strong { color: var(--ink); font-weight: 500; }
+
+      .cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+      .btn {
+        display: inline-block; background: var(--alpha); color: #04120a;
+        font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em;
+        text-decoration: none; padding: 13px 22px; border-radius: 3px;
+        font-weight: 600; border: none; cursor: pointer;
+      }
+      .btn:hover { background: #46e08f; }
+      .btn-ghost {
+        background: transparent; color: var(--ink); border: 1px solid var(--line-bright);
+      }
+      .btn-ghost:hover { background: var(--panel-2); color: var(--ink-bright); }
+
+      /* ---------- the attribution panel: the whole pitch in one figure ---------- */
+      section { padding: 56px 0; border-top: 1px solid var(--line); }
+      h2 {
+        font-family: var(--mono); font-size: 12px; letter-spacing: 0.2em;
+        color: var(--dim); text-transform: uppercase; margin: 0 0 26px; font-weight: 500;
+      }
+      h3 { font-size: 20px; color: var(--ink-bright); margin: 0 0 10px; font-weight: 600; letter-spacing: -0.01em; }
+
+      .panel {
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 4px; padding: 26px;
+      }
+
+      .attr-total {
+        font-family: var(--mono); font-size: 13px; color: var(--dim);
+        display: flex; justify-content: space-between; align-items: baseline;
+        padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid var(--line);
+      }
+      .attr-total b { font-size: 22px; color: var(--ink-bright); font-weight: 600; }
+
+      .bar { display: flex; height: 40px; border-radius: 3px; overflow: hidden; margin-bottom: 14px; }
+      .bar-beta  { width: 42%; background: var(--beta); }
+      .bar-alpha { width: 58%; background: var(--alpha); }
+
+      .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-family: var(--mono); font-size: 13px; }
+      .legend .k { display: flex; align-items: center; gap: 8px; color: var(--dim); margin-bottom: 4px; }
+      .swatch { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+      .legend .v { font-size: 19px; color: var(--ink-bright); }
+      .legend .note { font-size: 12px; color: var(--dim); line-height: 1.5; margin-top: 6px; font-family: var(--sans); }
+
+      .figcaption {
+        font-size: 13px; color: var(--dim); margin-top: 18px;
+        padding-top: 16px; border-top: 1px solid var(--line);
+      }
+
+      /* ---------- feature grid ---------- */
+      .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+      .cell { background: var(--panel); padding: 24px; }
+      .cell h3 { font-size: 16px; margin-bottom: 8px; }
+      .cell p { margin: 0; font-size: 14.5px; color: var(--dim); }
+
+      /* ---------- doctrine ---------- */
+      .statuses { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; padding: 0; list-style: none; }
+      .statuses li {
+        font-family: var(--mono); font-size: 11px; letter-spacing: 0.09em;
+        padding: 5px 10px; border-radius: 3px; border: 1px solid var(--line-bright); color: var(--dim);
+      }
+      .statuses .ok   { color: var(--alpha); border-color: rgba(53,208,127,0.35); }
+      .statuses .mid  { color: var(--warn);  border-color: rgba(224,163,62,0.35); }
+      .statuses .dead { color: var(--loss);  border-color: rgba(239,90,66,0.35); }
+
+      blockquote {
+        margin: 0; padding: 18px 22px; border-left: 2px solid var(--alpha);
+        background: var(--panel-2); color: var(--ink); font-size: 16px;
+      }
+
+      /* ---------- signup ---------- */
+      .price {
+        font-family: var(--mono); display: flex; align-items: baseline; gap: 12px;
+        margin-bottom: 8px; flex-wrap: wrap;
+      }
+      .price .now { font-size: 34px; color: var(--ink-bright); font-weight: 600; }
+      .price .was { font-size: 15px; color: var(--dim); text-decoration: line-through; }
+      .price .per { font-size: 14px; color: var(--dim); }
+
+      form { margin-top: 22px; }
+      .field { margin-bottom: 16px; }
+      label {
+        display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+        text-transform: uppercase; color: var(--dim); margin-bottom: 7px;
+      }
+      label .opt { text-transform: none; letter-spacing: 0; color: #4a5364; }
+      input, select, textarea {
+        width: 100%; background: var(--bg); color: var(--ink);
+        border: 1px solid var(--line-bright); border-radius: 3px;
+        padding: 11px 13px; font-family: var(--sans); font-size: 15px;
+      }
+      input:focus, select:focus, textarea:focus { outline: none; border-color: var(--alpha); }
+      textarea { resize: vertical; min-height: 68px; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+      .formnote { font-size: 12.5px; color: var(--dim); margin-top: 14px; }
+      .status { margin-top: 16px; font-family: var(--mono); font-size: 13px; display: none; padding: 12px 14px; border-radius: 3px; }
+      .status.show { display: block; }
+      .status.good { color: var(--alpha); background: rgba(53,208,127,0.08); border: 1px solid rgba(53,208,127,0.3); }
+      .status.bad  { color: var(--loss);  background: rgba(239,90,66,0.08);  border: 1px solid rgba(239,90,66,0.3); }
+
+      /* ---------- footer ---------- */
+      footer { padding: 44px 0 70px; border-top: 1px solid var(--line); font-size: 13px; color: var(--dim); }
+      footer p { max-width: 68ch; }
+      .disclaimer { border: 1px solid var(--line); border-radius: 4px; padding: 16px 18px; margin-bottom: 26px; background: var(--panel); }
+      .disclaimer b { color: var(--ink); font-weight: 600; }
+
+      @media (max-width: 560px) {
+        .legend, .row, .grid { grid-template-columns: 1fr; }
+        header { padding: 56px 0 44px; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <nav>
+        <a class="wordmark" href="./">GARGANTUA<span>.</span></a>
+        <a class="navlink" href="../" target="_blank" rel="noopener">SEE THE INSTRUMENT →</a>
+      </nav>
+
+      <header>
+        <h1>Your P&amp;L doesn't tell you whether you have an edge.</h1>
+        <p class="sub">
+          A green month in a market that rose 4% tells you almost nothing. GARGANTUA splits
+          the return <strong>you</strong> produced from the return the market handed you — then holds
+          every setup you trade to a statistical bar it has to clear, or get killed.
+        </p>
+        <div class="cta-row">
+          <a class="btn" href="#reserve">Reserve a founding seat</a>
+          <a class="btn btn-ghost" href="../" target="_blank" rel="noopener">Open the live demo</a>
+        </div>
+      </header>
+
+      <section>
+        <h2>The number most journals never show you</h2>
+        <div class="panel">
+          <div class="attr-total">
+            <span>THREE CLOSED TRADES · REALIZED</span>
+            <b>+$500</b>
+          </div>
+          <div class="bar" role="img" aria-label="Of $500 realized profit, $210 was market beta and $290 was alpha.">
+            <div class="bar-beta"></div>
+            <div class="bar-alpha"></div>
+          </div>
+          <div class="legend">
+            <div>
+              <div class="k"><span class="swatch" style="background:var(--beta)"></span> CARRIED BY THE MARKET</div>
+              <div class="v">$210</div>
+              <p class="note">What a same-size, same-duration index position would have returned over the identical holding windows.</p>
+            </div>
+            <div>
+              <div class="k"><span class="swatch" style="background:var(--alpha)"></span> YOURS</div>
+              <div class="v">$290</div>
+              <p class="note">What's left once beta is removed. This is the only figure that says anything about skill — and the only one worth compounding.</p>
+            </div>
+          </div>
+          <p class="figcaption">
+            Illustrative figures from the public demo's example book. Two traders can both post
+            +$500 and be running completely different businesses; until you decompose it, you
+            cannot tell which one you are.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>What it does</h2>
+        <div class="grid">
+          <div class="cell">
+            <h3>Alpha attribution</h3>
+            <p>Every closed trade is scored against the market over its own holding window. You see skill and beta as separate lines, per trade and in aggregate.</p>
+          </div>
+          <div class="cell">
+            <h3>Expectancy that survives scrutiny</h3>
+            <p>Win rate is theater. You get expectancy per setup with effective N and t-stat attached, so a "great" setup with nine samples is labelled as what it is.</p>
+          </div>
+          <div class="cell">
+            <h3>Setup grading</h3>
+            <p>Each entry carries its conditions — trend quality, VIX, extension from the 200, credit state. Grades let you find out which conditions actually pay you.</p>
+          </div>
+          <div class="cell">
+            <h3>An edge registry</h3>
+            <p>A standing record of every setup you've tested and its dated verdict. Validated, marginal, thin, killed. Nothing gets traded on vibes twice.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>The doctrine</h2>
+        <blockquote>A number not in the registry is a rumor.</blockquote>
+        <p style="margin-top:22px; color:var(--dim); max-width:64ch;">
+          GARGANTUA was built as a private instrument first, under one rule: a claim about an
+          edge is worthless without a script that produced it and a dated verdict against a
+          pre-set bar. Every setup lands in one of these states, and a killed edge stays killed
+          unless genuinely new data shows up.
+        </p>
+        <ul class="statuses">
+          <li class="ok">VALIDATED</li>
+          <li class="mid">MARGINAL</li>
+          <li class="mid">PAPER</li>
+          <li class="mid">THIN</li>
+          <li class="dead">NOT_VALIDATED</li>
+          <li class="dead">KILLED</li>
+        </ul>
+        <p style="margin-top:26px; color:var(--dim);">
+          The instrument is already running and public.
+          <a href="../" target="_blank" rel="noopener" style="color:var(--alpha)">Click through the demo</a>
+          — no signup, no email gate — and decide for yourself whether it's built by someone who trades.
+        </p>
+      </section>
+
+      <section id="reserve">
+        <h2>Founding seats</h2>
+        <div class="panel">
+          <div class="price">
+            <span class="now">$29</span>
+            <span class="was">$49</span>
+            <span class="per">/ month — locked for as long as you stay subscribed</span>
+          </div>
+          <p style="color:var(--dim); font-size:14.5px; margin:0;">
+            Not built yet as a hosted product — that's the honest status. I'm opening a founding
+            cohort first, and I'll only build it out if enough traders want it. No card now; you'll
+            get one email when it's ready and nothing else.
+          </p>
+
+          <form id="reserve-form" novalidate>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com" />
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="volume">Trades per month</label>
+                <select id="volume" name="volume" required>
+                  <option value="">Select…</option>
+                  <option value="lt5">Fewer than 5</option>
+                  <option value="5-20">5 – 20</option>
+                  <option value="20-60">20 – 60</option>
+                  <option value="gt60">More than 60</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="current">Journal today <span class="opt">(optional)</span></label>
+                <select id="current" name="current">
+                  <option value="">Select…</option>
+                  <option value="none">I don't keep one</option>
+                  <option value="sheet">A spreadsheet</option>
+                  <option value="broker">My broker's reports</option>
+                  <option value="paid">A paid journal tool</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="pain">What would make you switch? <span class="opt">(optional, but it's the most useful thing you can tell me)</span></label>
+              <textarea id="pain" name="pain" placeholder="The one thing your current setup won't tell you…"></textarea>
+            </div>
+            <button class="btn" type="submit" id="submit-btn">Reserve my seat at $29/mo</button>
+            <p class="formnote">One email when it launches. No list rental, no drip sequence, unsubscribe kills it permanently.</p>
+            <div class="status" id="form-status" role="status" aria-live="polite"></div>
+          </form>
+        </div>
+      </section>
+
+      <footer>
+        <div class="disclaimer">
+          <b>Not investment advice.</b> GARGANTUA analyzes trades you have already made. It does
+          not recommend positions, generate signals, manage money, or connect to a broker to place
+          orders. Nothing it displays is a solicitation to buy or sell any security. Options
+          trading involves substantial risk of loss and is not suitable for every investor. Past
+          performance — yours or anyone's — does not predict future results.
+        </div>
+        <p>
+          Figures shown on this page come from the public demo's example book and are illustrative,
+          not a track record. GARGANTUA is an independent project and is not affiliated with any
+          broker, exchange, or data vendor.
+        </p>
+        <p style="margin-top:20px;">
+          <a class="navlink" href="../" target="_blank" rel="noopener">THE INSTRUMENT →</a>
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      /* ------------------------------------------------------------------
+         WIRING REQUIRED BEFORE THIS PAGE GOES ANYWHERE NEAR TRAFFIC.
+
+         This is a static page on GitHub Pages: it has no server, so the form
+         needs a third-party collector. Those need an account in YOUR name —
+         I can't open one. Paste the POST endpoint here and the form goes live.
+
+           Formspree   https://formspree.io      free tier: 50 submissions/mo
+           Buttondown  https://buttondown.email   free to 100 subscribers, real list
+           ConvertKit / Kit                       free to 10k, heavier
+
+         Buttondown is the pick if you want the emails to live somewhere you
+         can actually send from later. Formspree is faster to wire.
+
+         Until FORM_ENDPOINT is set, the form deliberately refuses to submit and
+         says so out loud. A signup form that silently drops leads is worse than
+         no form: you'd read a real demand signal as zero interest and kill a
+         business that was working.
+      ------------------------------------------------------------------ */
+      const FORM_ENDPOINT = "";
+
+      const form = document.getElementById("reserve-form");
+      const statusEl = document.getElementById("form-status");
+      const btn = document.getElementById("submit-btn");
+
+      function say(msg, ok) {
+        statusEl.textContent = msg;
+        statusEl.className = "status show " + (ok ? "good" : "bad");
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = form.email.value.trim();
+        if (!email || !email.includes("@")) return say("Enter a valid email address.", false);
+        if (!form.volume.value) return say("Pick your rough monthly trade count.", false);
+
+        if (!FORM_ENDPOINT) {
+          return say("Form not wired up yet — see FORM_ENDPOINT in this page's source.", false);
+        }
+
+        btn.disabled = true;
+        btn.textContent = "Reserving…";
+
+        try {
+          const res = await fetch(FORM_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              email,
+              volume: form.volume.value,
+              current: form.current.value,
+              pain: form.pain.value.trim(),
+              // Which channel the signup came from. Post links with ?src=reddit,
+              // ?src=fintwit etc. — without it you learn that people signed up but
+              // never learn where to spend the next hour.
+              src: new URLSearchParams(location.search).get("src") || "direct",
+              at: new Date().toISOString(),
+            }),
+          });
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          form.reset();
+          say("Seat reserved. One email when it's ready — nothing before that.", true);
+        } catch (err) {
+          say("That didn't go through. Email me directly and I'll add you by hand.", false);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Reserve my seat at $29/mo";
+        }
+      });
+    </script>
+  </body>
+</html>
